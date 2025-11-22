@@ -2,81 +2,307 @@ from manim import *
 import numpy as np
 
 
+# --------------------------------------------------
+# Definições de funções auxiliares para as animações
+# --------------------------------------------------
+
+
+# Plano tangente
+def tangent_plane(point):
+    """Retorna o plano tangente às subvariedades integrais que passa pelo ponto point.
+    Tal ponto deve ser um np.array"""
+
+    x0, y0, z0 = point
+    v1 = np.array([1, 0, y0])  # ∂/∂x
+    v2 = np.array([0, 1, x0])  # ∂/∂y
+
+    return Surface(
+        lambda u0, v0: point + u0 * v1 + v0 * v2,
+        u_range=[-5, 5],
+        v_range=[-5, 5],
+        resolution=(6, 6),
+        fill_color=GREEN,
+        fill_opacity=0.7,
+    )
+
+
+# Updater do plano
+def update_plane(plano):
+    """Updater necessário para que o plano passe sempre pelo ponto dot.
+    Obs: ponto dot é o mesmo ponto utilizado em todas as animações"""
+
+    new_point = dot.get_center()
+    plano.become(tangent_plane(new_point))
+
+
+def parametrizacao_01(t):
+    """Vai do ponto (1, -1, 1) até o ponto (-1, 1, 1) sobre a curva de nível z = x * y + 2."""
+
+    x0 = 1 - 2 * t
+    y0 = -1 + 2 * t
+    z0 = x0 * y0 + 2
+    return np.array([x0, y0, z0])
+
+
+def parametrizacao_02(t):
+    """Vai do ponto (-1, 1, 1) até o ponto (1, 1, 3) sobre a curva de nível z = x * y + 2."""
+
+    x0 = -1 + 2 * t
+    y0 = 1
+    z0 = x0 * y0 + 2
+    return np.array([x0, y0, z0])
+
+
+def parametrizacao_03(t):
+    """Vai do ponto (1, 1, 3) até o ponto (-1, -1, 3) sobre a curva de nível z = x * y + 2."""
+
+    x0 = 1 - 2 * t
+    y0 = 1 - 2 * t
+    z0 = x0 * y0 + 2
+    return np.array([x0, y0, z0])
+
+
+def parametrizacao_04(t):
+    """Vai do ponto (-1, -1, 3) até o ponto (1, 2, 0) em linha reta."""
+
+    x0 = -1 + 2 * t
+    y0 = -1 + 3 * t
+    z0 = 3 - 3 * t
+    return np.array([x0, y0, z0])
+
+
+def subvariedade_integral(point, x_range=(-6, 6), y_range=(-6, 6)):
+    """Retorna a superfície de nível de F(x,y,z) = z - x * y que passa pelo ponto fornecido.
+    point: array/list/np.array de formato (3,) representando (x0, y0, z0)"""
+
+    x0, y0, z0 = point
+    c = z0 - x0 * y0  # constante que define a curva de nível
+
+    return Surface(
+        lambda u0, v0: np.array([
+            u0,
+            v0,
+            u0 * v0 + c  # z = x * y + c
+        ]),
+        u_range=[x_range[0], x_range[1]],
+        v_range=[y_range[0], y_range[1]],
+        resolution=(30, 30),
+        fill_opacity=1.0,
+        stroke_color=WHITE,
+    )
+
+
+# Updater da subvariedade integral
+def update_subvariedade_integral(superficie):
+    """Updater necessário para que a superfície passe sempre pelo ponto dot.
+    Obs: ponto dot é o mesmo ponto utilizado em todas as animações"""
+
+    new_point = dot.get_center()
+    superficie.become(subvariedade_integral(new_point))
+
+
+def v(point):
+    """Retorna o vetor do campo V no ponto point (como Arrow3D)."""
+    """Ponto precisa ser um Dot3D"""
+
+    x0, y0, z0 = point.get_center()
+    v_p = Arrow3D(
+        start=point.get_center(),
+        end=point.get_center() + [1, 0, y0],
+        color=ORANGE,
+        resolution=8,
+        stroke_width=1,
+    )
+
+    return v_p
+
+
+def w(point):
+    """Retorna o vetor do campo W no ponto point (como Arrow3D)."""
+    """Ponto precisa ser um Dot3D"""
+
+    x0, y0, z0 = point.get_center()
+    w_p = Arrow3D(
+        start=point.get_center(),
+        end=point.get_center() + [0, 1, x0],
+        color=PURPLE,
+        resolution=8,
+        stroke_width=1,
+    )
+
+    return w_p
+
+
+def v_proj(point):
+    """Projeta o vetor do campo V no plano xy"""
+
+    x0, y0, z0 = point.get_center()
+    return Arrow3D(
+        start=np.array([x0, y0, 0]),
+        end=np.array([x0 + 1, y0, 0]),
+        color=ORANGE,
+        resolution=8,
+        stroke_width=1
+    )
+
+
+def w_proj(point):
+    """Projeta o vetor do campo W no plano xy"""
+
+    x0, y0, z0 = point.get_center()
+    return Arrow3D(
+        start=np.array([x0, y0, 0]),
+        end=np.array([x0, y0 + 1, 0]),
+        color=PURPLE,
+        resolution=8,
+        stroke_width=1
+    )
+
+
+def fluxo_v(t, x0, y0, z0):
+    """Dado um certo t e um ponto p = (x0, y0, z0), retorna o ponto phi_t(p) (fluxo de V)."""
+
+    return np.array([
+        x0 + t,
+        y0,
+        z0 + t * y0
+    ])
+
+
+def fluxo_w(t, x0, y0, z0):
+    """Dado um certo t e um ponto p = (x0, y0, z0), retorna o ponto phi_t(p) (fluxo de W)."""
+
+    return np.array([
+        x0,
+        y0 + t,
+        z0 + t * x0
+    ])
+
+
+def big_phi(u0, v0, w0):
+    """Sistema de coordenadas final do teorema de Frobenius. Retorna o ponto correspondente a:
+    Andar z unidades no eixo z, andar y unidades no fluxo de W, andar x unidades no fluxo de V.
+    Phi (u, v, w) = phi^V_u . phi^W_v (0, 0, w)"""
+
+    return np.array([u0, v0, w0 + u0 * v0])  # Específico para o exemplo, mudar para generalizar
+
+
+# ----------------------------------------------
+# Criação dos elementos utilizados nas animações
+# ----------------------------------------------
+
+
+# Axes (eixos) principais a serem utilizados em todas as animações
+axes = ThreeDAxes(
+    x_range=[-6, 6, 1],
+    y_range=[-6, 6, 1],
+    z_range=[-6, 6, 1],
+    x_length=12,
+    y_length=12,
+    z_length=12,
+)
+
+# Ponto que será constantemente utilizado
+dot = Dot3D(np.array([-1, -1, -1]), radius=0.08, color=YELLOW)
+
+# Campos de vetores X e Y iniciais do exemplo
+xs = np.linspace(-3, 3, 4)  # Coordenadas dos pontos que serão usados. No total, são 64 vetores (4 ** 3)
+ys = np.linspace(-3, 3, 4)
+zs = np.linspace(-3, 3, 4)
+
+vector_field_X = []  # Cria as listas que serão utilizadas para guardar os campos de vetores
+vector_field_Y = []
+
+# Geração completa dos campos X e Y
+for x in xs:
+    for y in ys:
+        for z in zs:
+            p = np.array([x, y, z])
+
+            Xv = np.array([x, 1, x * (y + 1)])
+            Yv = np.array([1, 0, y])
+            norm_Xv = np.sqrt(x ** 2 + 1 + (x * (y + 1)) ** 2)
+            norm_Yv = np.sqrt(1 + y ** 2)
+
+            arrowX = Arrow3D(
+                start=p,
+                end=p + 0.5 * Xv / norm_Xv,
+                color=RED,
+                resolution=2,
+                stroke_width=1,
+            )
+            arrowY = Arrow3D(
+                start=p,
+                end=p + 0.5 * Yv / norm_Yv,
+                color=GREEN,
+                resolution=2,
+                stroke_width=1,
+            )
+
+            vector_field_X.append(arrowX)
+            vector_field_Y.append(arrowY)
+
+# "Mini" campo de vetores X. Dos 64 vetores de vector_field_X, pega apenas 5 para mostrar como a distribuição
+# é gerada por X e Y. Mesma ideia para mini_vector_field_Y
+mini_vector_field_X = [vector_field_X[21],
+                       vector_field_X[25],
+                       vector_field_X[26],
+                       vector_field_X[41],
+                       vector_field_X[38]]
+
+mini_vector_field_Y = [vector_field_Y[21],
+                       vector_field_Y[25],
+                       vector_field_Y[26],
+                       vector_field_Y[41],
+                       vector_field_Y[38]]
+
+# Caminhos a serem utilizados para que o ponto dot caminhe sobre as subvariedades integrais
+level_path_01 = ParametricFunction(
+    lambda t: parametrizacao_01(t),
+    t_range=(0, 1),
+    color=YELLOW,
+    stroke_width=2,
+)
+level_path_02 = ParametricFunction(
+    lambda t: parametrizacao_02(t),
+    t_range=(0, 1),
+    color=YELLOW,
+    stroke_width=2,
+)
+level_path_03 = ParametricFunction(
+    lambda t: parametrizacao_03(t),
+    t_range=(0, 1),
+    color=YELLOW,
+    stroke_width=2,
+)
+path_04 = ParametricFunction(
+    lambda t: parametrizacao_04(t),
+    t_range=(0, 1),
+    color=YELLOW,
+    stroke_width=2,
+)
+
+# Coordenadas pelas quais o ponto passará na primeira animação
+start = np.array([-1, -1, -1])
+stop1 = np.array([-1, 1, -1])
+stop2 = np.array([-1, 1, 1])
+stop3 = np.array([1, 1, -1])
+end = np.array([1, -1, 1])
+lista_de_pontos = [start, stop1, stop2, stop3, end]
+
+# Criação do plano
+plane = tangent_plane(start)
+plane.add_updater(update_plane)  # Updater para seguir o ponto dot
+
+# Criação das subvariedades integrais
+curvas_nivel_subv_integraveis = subvariedade_integral(dot.get_center())
+curvas_nivel_subv_integraveis.add_updater(update_subvariedade_integral)  # Updater para seguir o ponto dot
+
+
 class Animation(ThreeDScene):
     def construct(self):
 
         self.renderer.camera.shading = False
-
-        # Axes
-        axes = ThreeDAxes(
-            x_range=[-6, 6, 1],
-            y_range=[-6, 6, 1],
-            z_range=[-6, 6, 1],
-            x_length=12,
-            y_length=12,
-            z_length=12,
-        )
-
-        # --- Tangent plane construction ---
-
-        def tangent_plane(point):
-            x0, y0, z0 = point
-            v1 = np.array([1, 0, y0])  # ∂/∂x
-            v2 = np.array([0, 1, x0])  # ∂/∂y
-
-            return Surface(
-                lambda u, v: point + u * v1 + v * v2,
-                u_range=[-5, 5],
-                v_range=[-5, 5],
-                resolution=(6, 6),
-                fill_color=GREEN,
-                fill_opacity=0.7,
-            )
-
-        # Plane updater
-        def update_plane(plano):
-            new_point = dot.get_center()
-            plano.become(tangent_plane(new_point))
-
-        """
-        Campos de vetores X e Y
-        """
-
-        xs = np.linspace(-3, 3, 4)
-        ys = np.linspace(-3, 3, 4)
-        zs = np.linspace(-3, 3, 4)
-
-        vector_field_X = []
-        vector_field_Y = []
-
-        # Geração completa dos campos X e Y
-        for x in xs:
-            for y in ys:
-                for z in zs:
-                    p = np.array([x, y, z])
-
-                    Xv = np.array([x, 1, x * (y + 1)])
-                    Yv = np.array([1, 0, y])
-                    norm_Xv = np.sqrt(x ** 2 + 1 + (x * (y + 1)) ** 2)
-                    norm_Yv = np.sqrt(1 + y ** 2)
-
-                    arrowX = Arrow3D(
-                        start=p,
-                        end=p + 0.5 * Xv / norm_Xv,
-                        color=RED,
-                        resolution=2,
-                        stroke_width=1,
-                    )
-                    arrowY = Arrow3D(
-                        start=p,
-                        end=p + 0.5 * Yv / norm_Yv,
-                        color=GREEN,
-                        resolution=2,
-                        stroke_width=1,
-                    )
-
-                    vector_field_X.append(arrowX)
-                    vector_field_Y.append(arrowY)
 
         # Texto do campo X
         texto_campo_X = MathTex(
@@ -90,240 +316,11 @@ class Animation(ThreeDScene):
             color=GREEN
         ).scale(0.7).to_corner(UL)
 
-        mini_vector_field_X = [vector_field_X[21],
-                               vector_field_X[25],
-                               vector_field_X[26],
-                               vector_field_X[41],
-                               vector_field_X[38]]
-
-        mini_vector_field_Y = [vector_field_Y[21],
-                               vector_field_Y[25],
-                               vector_field_Y[26],
-                               vector_field_Y[41],
-                               vector_field_Y[38]]
-
-        """
-        Caminhos sobre a curva de nível z - x * y = 2
-        """
-
-        # --- Level curve 01 ---
-        # gamma(t) = (1 - 2t, -1 + 2t, (1-2t)(-1+2t) + 2 )
-
-        def parametrizacao_01(t):
-
-            """Vai do ponto (1, -1, 1) até o ponto (-1, 1, 1)."""
-
-            x = 1 - 2 * t
-            y = -1 + 2 * t
-            z = x * y + 2
-            return np.array([x, y, z])
-
-        level_path_01 = ParametricFunction(
-            lambda t: parametrizacao_01(t),
-            t_range=(0, 1),
-            color=YELLOW,
-            stroke_width=2,
-        )
-
-        # --- Level curve 02 ---
-        # gamma(t) = (-1 + 2t, 1, 2t + 1)
-
-        def parametrizacao_02(t):
-
-            """Vai do ponto (-1, 1, 1) até o ponto (1, 1, 3)."""
-
-            x = -1 + 2 * t
-            y = 1
-            z = x * y + 2
-            return np.array([x, y, z])
-
-        level_path_02 = ParametricFunction(
-            lambda t: parametrizacao_02(t),
-            t_range=(0, 1),
-            color=YELLOW,
-            stroke_width=2,
-        )
-
-        # --- Level curve 03 ---
-        # gamma(t) = (1 - 2t, 1 - 2t, 4t² - 4t + 1)
-
-        def parametrizacao_03(t):
-
-            """Vai do ponto (1, 1, 3) até o ponto (-1, -1, 3)."""
-
-            x = 1 - 2 * t
-            y = 1 - 2 * t
-            z = x * y + 2
-            return np.array([x, y, z])
-
-        level_path_03 = ParametricFunction(
-            lambda t: parametrizacao_03(t),
-            t_range=(0, 1),
-            color=YELLOW,
-            stroke_width=2,
-        )
-
-        # --- Curve 04 ---
-        # gamma(t) = (-1 + 3t, -1 + t, 3 - 3t)
-
-        def parametrizacao_04(t):
-
-            """Vai do ponto (-1, -1, 3) até o ponto (1, 2, 0)"""
-
-            x = -1 + 2 * t
-            y = -1 + 3 * t
-            z = 3 - 3 * t
-            return np.array([x, y, z])
-
-        path_04 = ParametricFunction(
-            lambda t: parametrizacao_04(t),
-            t_range=(0, 1),
-            color=YELLOW,
-            stroke_width=2,
-        )
-
-        """
-        Curvas de nível
-        """
-
-        def subvariedade_integral(point, x_range=(-6, 6), y_range=(-6, 6)):
-
-            """
-            Retorna a superfície de nível de F(x,y,z) = z - x * y que passa pelo ponto fornecido.
-            point: array/list/np.array de formato (3,) representando (x0, y0, z0)
-            """
-
-            x0, y0, z0 = point
-            c = z0 - x0 * y0  # constante que define a curva de nível
-
-            return Surface(
-                lambda u, v: np.array([
-                    u,
-                    v,
-                    u * v + c  # z = xy + c
-                ]),
-                u_range=[x_range[0], x_range[1]],
-                v_range=[y_range[0], y_range[1]],
-                resolution=(30, 30),
-                fill_opacity=1.0,
-                stroke_color=WHITE,
-            )
-
-        # Updater da subvariedade integral
-        def update_subvariedade_integral(superficie):
-            new_point = dot.get_center()
-            superficie.become(subvariedade_integral(new_point))
-
-        """
-        Campos V e W pi-relacionados com d/dx e d/dy
-        """
-
-        def v(point):
-
-            """Retorna o vetor do campo V no ponto point (como Arrow3D)."""
-            """Ponto precisa ser um Dot3D"""
-
-            x0, y0, z0 = point.get_center()
-            v_p = Arrow3D(
-                start=point.get_center(),
-                end=point.get_center() + [1, 0, y0],
-                color=ORANGE,
-                resolution=8,
-                stroke_width=1,
-            )
-
-            return v_p
-
-        def w(point):
-
-            """Retorna o vetor do campo W no ponto point (como Arrow3D)."""
-            """Ponto precisa ser um Dot3D"""
-
-            x0, y0, z0 = point.get_center()
-            w_p = Arrow3D(
-                start=point.get_center(),
-                end=point.get_center() + [0, 1, x0],
-                color=PURPLE,
-                resolution=8,
-                stroke_width=1,
-            )
-
-            return w_p
-
-        def v_proj(point):
-
-            """Projeta o vetor do campo V no plano xy"""
-
-            x0, y0, z0 = point.get_center()
-            return Arrow3D(
-                start=np.array([x0, y0, 0]),
-                end=np.array([x0 + 1, y0, 0]),
-                color=ORANGE,
-                resolution=8,
-                stroke_width=1
-            )
-
-        def w_proj(point):
-
-            """Projeta o vetor do campo W no plano xy"""
-
-            x0, y0, z0 = point.get_center()
-            return Arrow3D(
-                start=np.array([x0, y0, 0]),
-                end=np.array([x0, y0 + 1, 0]),
-                color=PURPLE,
-                resolution=8,
-                stroke_width=1
-            )
-
-        def fluxo_v(t, x, y, z):
-
-            """Dado um certo t e um ponto p, retorna o ponto phi_t(p) (fluxo de V)."""
-
-            return np.array([
-                x + t,
-                y,
-                z + t * y
-            ])
-
-        def fluxo_w(t, x, y, z):
-
-            """Dado um certo t e um ponto p, retorna o ponto phi_t(p) (fluxo de W)."""
-
-            return np.array([
-                x,
-                y + t,
-                z + t * x
-            ])
-
-        def big_phi(x, y, z):
-
-            """Sistema de coordenadas final do teorema de Frobenius. Retorna o ponto correspondente a:
-            Andar z unidades no eixo z, andar y unidades no fluxo de W, andar x unidades no fluxo de V.
-            Phi (u, v, w) = phi^V_u . phi^W_v (0, 0, w)"""
-
-            return np.array([x, y, z + x * y])
-
-        """------------------------------ Animações ------------------------------"""
-
         """
         Criação dos elementos:
         """
 
-        # Moving point
-        start = np.array([-1, -1, -1])
-        stop1 = np.array([-1, 1, -1])
-        stop2 = np.array([-1, 1, 1])
-        stop3 = np.array([1, 1, -1])
-        end = np.array([1, -1, 1])
-        lista_de_pontos = [start, stop1, stop2, stop3, end]
 
-        # Criação do ponto
-        dot = Dot3D(start, radius=0.08, color=YELLOW)
-
-        # Criação do plano
-        plane = tangent_plane(start)
-        plane.add_updater(update_plane)
 
         self.set_camera_orientation(phi=60 * DEGREES, theta=45 * DEGREES)
 
@@ -334,9 +331,9 @@ class Animation(ThreeDScene):
         self.add(axes)
         self.add(dot, plane)
 
-        # --- Movement in straight segments ---
-        for p in lista_de_pontos:
-            self.play(dot.animate.move_to(p), run_time=2, rate_func=smooth)
+        # Movimento em linhas retas do ponto, mostrando a distribuição
+        for ponto in lista_de_pontos:
+            self.play(dot.animate.move_to(ponto), run_time=2, rate_func=smooth)
             self.wait()
 
         self.remove(dot, plane)
@@ -388,8 +385,8 @@ class Animation(ThreeDScene):
         # --- Movement in straight segments ---
         self.add(dot, plane)
         self.wait()
-        for p in lista_de_pontos:
-            self.play(dot.animate.move_to(p), run_time=2, rate_func=smooth)
+        for ponto in lista_de_pontos:
+            self.play(dot.animate.move_to(ponto), run_time=2, rate_func=smooth)
             self.wait()
         self.wait(5)
         self.remove(axes, dot, plane, *mini_vector_field_Y, *mini_vector_field_Y)
@@ -511,11 +508,10 @@ class Animation(ThreeDScene):
         )
         self.wait()
 
-        # Criação das subvariedades integrais
-        curvas_nivel_subv_integraveis = subvariedade_integral(dot.get_center())
+
 
         self.add(curvas_nivel_subv_integraveis)
-        curvas_nivel_subv_integraveis.add_updater(update_subvariedade_integral)
+
 
         for curve in [level_path_01, level_path_02, level_path_03, path_04]:
             self.play(MoveAlongPath(dot, curve), run_time=4, rate_func=smooth)
@@ -666,7 +662,7 @@ class Animation(ThreeDScene):
         self.add(reta)
         self.wait(6)
 
-        self.remove(axes, *vetores, reta, plane, dot)
+        self.remove(axes, *vetores, reta, plane, dot, v_original, w_original, v(dot), w(dot))
 
         # $d \pi (p) \cdot V_p = \frac{\partial}{\partial x}|_p = e_1$, for all $p \in M$
 
@@ -850,6 +846,13 @@ class Animation(ThreeDScene):
 
         # Criação dos elementos da cena
 
+        # Texto para a definição da big_phi
+        texto_1 = Tex(
+            r"Sabendo que os fluxos de V e W são dados por"
+            r"$$$$",
+            color=WHITE
+        ).scale(0.7).to_corner(UP)
+
         # Cria dois eixos coordenados
         axes_dom = ThreeDAxes(  # axes_dom é o domínio da função big_phi
             x_range=[-5, 5, 1],
@@ -982,7 +985,7 @@ class Animation(ThreeDScene):
         # Linha vermelha no contradomínio, representando caminhar sobre o fluxo de V
         linha_x_cod = always_redraw(
             lambda: Line3D(
-                start=axes_cod.c2p(                             # Note que end=(0, v, w) = fluxo_w(v, 0, 0, w)
+                start=axes_cod.c2p(  # Note que end=(0, v, w) = fluxo_w(v, 0, 0, w)
                     *fluxo_w(
                         axes_dom.p2c(dot_dom.get_center())[1],  # parâmetro t
                         0,
@@ -992,7 +995,7 @@ class Animation(ThreeDScene):
                 ),
                 end=axes_cod.c2p(
                     *fluxo_v(
-                        axes_dom.p2c(dot_dom.get_center())[0],      # parâmetro t
+                        axes_dom.p2c(dot_dom.get_center())[0],  # parâmetro t
                         *fluxo_w(
                             axes_dom.p2c(dot_dom.get_center())[1],  # parâmetro t
                             0,
@@ -1007,6 +1010,8 @@ class Animation(ThreeDScene):
         )
 
         # Início da cena
+
+        # Definir $\Phi(u, v, w) = \varphi_u^V \circ \varphi_v^W (0, 0, w)$
 
         self.add(axes_dom, axes_cod, dot_dom, dot_cod)
         self.add(linha_x_dom, linha_y_dom, linha_z_dom)
